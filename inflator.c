@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 unsigned long calcularTamanho(char c, char *vetor[]);
 
@@ -10,6 +11,9 @@ int main() {
         printf("Não foi possível ler o arquivo");
         return 1;
     }
+    clock_t inicio, fim;
+    double tempo_final;
+
     char *regras[26] = {0};
     char letra;
     char valor[1025] = {0};
@@ -32,8 +36,12 @@ int main() {
         count++;
     }
 
+    inicio = clock();
     unsigned long soma = calcularTamanho(letraInicial, regras);
+    fim = clock();
+    tempo_final = ((double) fim - inicio) / CLOCKS_PER_SEC;
     printf("%lu\n",soma);
+    printf("%f\n",tempo_final);
     for (int i = 0; i < 26; i++) {
         if (regras[i] != NULL) {
             free(regras[i]);
