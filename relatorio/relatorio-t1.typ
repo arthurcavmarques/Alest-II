@@ -1,3 +1,4 @@
+
 // ============================================================
 //  Relatório — T1: O Inflator Tabajara Plus de Textos
 // ============================================================
@@ -83,11 +84,11 @@
 // ============================================================
 = Descrição do Problema
 
-O problema do "Inflator Tabajara Plus" consiste em calcular o tamanho final de um texto gerado a partir de sucessivas substituições de caracteres. O objetivo é determinar apenas a quantidade total de caracteres resultantes.
+O problema do "Inflator Tabajara Plus" consiste em calcular o tamanho final de um texto gerado a partir de sucessivas substituições de caracteres, sem que seja necessário construir a string resultante. O objetivo é determinar apenas a quantidade total de caracteres após a expansão completa.
 
-A entrada é fornecida através de um arquivo de texto. Cada linha pode conter uma regra de substituição no formato `<letra> <string_de_substituicao>`, onde a string possui no máximo 1024 caracteres, ou apenas uma `<letra>`, indicando que esta não possui regra de expansão (ou seja, é um caractere terminal).
+A entrada é fornecida por meio de um arquivo de texto. Cada linha pode conter uma regra de substituição no formato `<letra> <string_de_substituicao>`, onde a string de substituição possui no máximo 1024 caracteres, ou apenas uma `<letra>` isolada, indicando que este caractere não possui regra de expansão — ou seja, é um símbolo terminal.
 
-A letra inicial (raiz da expansão) não é fornecida explicitamente de forma isolada. Ela deve ser inferida: que não é "filha" de nenhuma outra letra. A saída esperada é um número inteiro longo (`unsigned long` na linguagem C) representando o tamanho final da string após todas as substituições possíveis terem sido aplicadas recursivamente.
+A letra inicial (raiz da expansão) corresponde à primeira letra listada no arquivo de entrada. A saída esperada é um número inteiro sem sinal de 64 bits (`unsigned long` em C) representando o tamanho total da string resultante após a aplicação recursiva de todas as substituições possíveis.
 
 == Exemplo Ilustrativo
 
@@ -108,11 +109,12 @@ A letra inicial (raiz da expansão) não é fornecida explicitamente de forma is
   caption: [Tabela de substituições do exemplo do enunciado.],
 )
 
-Para chegar aos 47 caracteres finais, calculamos o tamanho de baixo para cima (ou nas folhas da árvore de recursão). Letras sem regras como `m` e `o` valem 1.
-- `i` vira `mooo` $->$ 1 + 1 + 1 + 1 = 4.
-- `u` vira `mimimi` $->$ 1 + 4 + 1 + 4 + 1 + 4 = 15.
-- `e` vira `mimomu` $->$ 1 + 4 + 1 + 1 + 1 + 15 = 23.
-- `a` vira `memimomu` $->$ 1 + 23 + 1 + 4 + 1 + 1 + 1 + 15 = 47.
+Para obter os 47 caracteres finais, o tamanho é calculado de baixo para cima, a partir das folhas da árvore de recursão. Letras sem regra de expansão, como `m` e `o`, contribuem com valor 1 cada.
+
+- `i` expande para `mooo` $->$ 1 + 1 + 1 + 1 = 4.
+- `u` expande para `mimimi` $->$ 1 + 4 + 1 + 4 + 1 + 4 = 15.
+- `e` expande para `mimomu` $->$ 1 + 4 + 1 + 1 + 1 + 15 = 23.
+- `a` expande para `memimomu` $->$ 1 + 23 + 1 + 4 + 1 + 1 + 1 + 15 = 47.
 
 #pagebreak()
 
@@ -121,98 +123,66 @@ Para chegar aos 47 caracteres finais, calculamos o tamanho de baixo para cima (o
 
 == Ideia Geral
 
-A intuição principal foi perceber que o problema não exige a string resultante, apenas o seu tamanho. Se tentássemos alocar memória para concatenar as strings, rapidamente esgotaríamos a RAM em entradas grandes. A cada chamada, em vez de retornar strings, retornamos inteiros que são somados na subida da recursão.
+A intuição central foi perceber que o problema não exige a construção da string resultante, apenas o cálculo de seu tamanho. Tentar alocar e concatenar as strings em memória seria inviável para entradas grandes, pois o resultado pode crescer exponencialmente. Portanto, em vez de retornar strings, cada chamada recursiva retorna um inteiro que representa o comprimento da expansão daquele caractere, e esses valores são somados à medida que a recursão retorna.
 
 == Estruturas de Dados Utilizadas
 
-Para garantir acesso em tempo constante $O(1)$ às regras de substituição, utilizou-se o princípio de Tabela Hash direta através de arrays em C:
-- `char *regras[26]`: Um array de ponteiros onde o índice é calculado pela subtração da tabela ASCII (`letra - 'a'`). Ele armazena as strings de substituição.
-- `int apareceComoFilho[26]`: Um array booleano (0 ou 1) usado para rastrear quais letras aparecem no lado direito das regras, fundamental para descobrir a letra inicial.
+Para garantir acesso em tempo constante $O(1)$ às regras de substituição, utilizou-se uma tabela de endereçamento direto implementada por meio de um array em C:
 
-== Algoritmo — Pseudocódigo
+- `char *regras[26]`: um array de ponteiros indexado pela posição da letra no alfabeto, calculada pela expressão `letra - 'a'`. Cada posição armazena a string de substituição correspondente, ou `NULL` caso a letra seja terminal.
 
-```C
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+Essa abordagem equivale a uma tabela hash com função de hash perfeita, eliminando colisões e garantindo acesso em $O(1)$.
 
-unsigned long calcularTamanho(char c, char *vetor[], unsigned long cache[]);
+== Algoritmo (Pseudo Código)
 
-int main() {
-    FILE *pFile = fopen("input.txt", "r");
-    if (pFile == NULL) {
-        printf("Não foi possível ler o arquivo");
-        return 1;
-    }
-    char *regras[26] = {0};
-    char letra;
-    char valor[1025] = {0};
-    char buffer[1050] = {0};
-    int apareceComoFilho[26] = {0};
-    while (fgets(buffer, sizeof(buffer), pFile) != NULL) {
-        if (sscanf(buffer, "%c %s", &letra, valor) == 2) {
-            printf("%c == %s\n", letra, valor);
-            regras[letra - 'a'] = strdup(valor);
-            for (int i = 0; valor[i] != '\0'; i++) {
-                apareceComoFilho[valor[i] - 'a'] = 1;
-            }
-        } else if (sscanf(buffer, "%c", &letra) == 1) {
-            printf("%c\n", letra);
-        } else {
-            break;
-        }
-    }
-    char letraInicial;
-    for (int i = 0; i < 26; i++) {
-        if (regras[i] != NULL && apareceComoFilho[i] == 0) {
-            letraInicial = 'a' + i;
-        }
-    }
-    unsigned long cache[26] ={0};
-    unsigned long soma = calcularTamanho(letraInicial, regras, cache);
-    printf("%lu\n",soma);
-    for (int i = 0; i < 26; i++) {
-        if (regras[i] != NULL) {
-            free(regras[i]);
-        }
-    }
-    fclose(pFile);
-    return 0;
-}
+```
+FUNÇÃO Principal():
+    ABRIR arquivo "input.txt"
 
+    letraInicial = NULO
+    regras = VETOR vazio (mapeamento de chars para strings)
 
-unsigned long calcularTamanho(char c, char *vetor[], unsigned long cache[]) {
-    if (vetor[c - 'a'] == NULL) {
-        return 1;
-    }
-    if (cache[c - 'a'] > 0) {
-        return cache[c - 'a'];
-    }
+    // Leitura das regras
+    PARA CADA linha no arquivo:
+        LER 'letra' e 'texto'
+        SE for a primeira linha:
+            letraInicial = letra
+        regras[letra] = texto
 
-    char *valor = vetor[c - 'a'];
-    unsigned long soma = 0;
+    // Processamento
+    INICIAR cronômetro
+    tamanho_total = CalcularTamanho(letraInicial, regras)
+    PARAR cronômetro
 
-    for (int i = 0; valor[i] != '\0'; i++) {
-        soma = soma + calcularTamanho(valor[i], vetor, cache);
-    }
-    cache[c - 'a'] = soma;
-    return soma;
-}
+    IMPRIMIR tamanho_total e tempo gasto
+FIM FUNÇÃO
+
+FUNÇÃO CalcularTamanho(letra, regras):
+    // Caso base: se a letra não for uma regra
+    SE regras[letra] for VAZIO:
+        RETORNA 1
+
+    // Soma o tamanho gerado por cada caractere da regra
+    soma = 0
+    texto = regras[letra]
+
+    PARA CADA caractere EM texto:
+        soma = soma + CalcularTamanho(caractere, regras)
+    RETORNA soma
+FIM FUNÇÃO
 ```
 
 == Determinação da Letra Inicial
 
-lida, o algoritmo itera sobre todos os caracteres da string de substituicao. Para cada caractere, marca-se a posição correspondente no array apareceComoFilho como 1 (verdadeiro).
-Após ler todo o arquivo, basta procurar no array regras uma letra que possua uma regra mapeada (diferente de NULL), mas cujo valor em apareceComoFilho seja 0. Essa letra obrigatoriamente é a raiz, pois engatilha expansões mas nunca é gerada por outra regra.
+A letra inicial é definida como a primeira letra que aparece no arquivo de entrada. Para identificá-la, utiliza-se um contador inicializado em zero antes do laço de leitura. Na primeira iteração do `while`, quando o contador ainda vale zero, a letra lida à esquerda do buffer é armazenada na variável `letraInicial`. O contador é então incrementado a cada iteração, garantindo que apenas a primeira ocorrência seja capturada e que o valor não seja sobrescrito nas leituras seguintes.
 
 == Complexidade
 
-Como não há programação dinâmica (memoização(cache)), o algoritmo recalcula subproblemas repetidos. No pior caso, a complexidade de tempo é proporcional ao tamanho final da string virtual gerada, ou seja, $O(N)$, onde $N$ é o número de caracteres da expansão completa (o que pode representar um crescimento exponencial em relação ao tamanho da entrada.
+Por não utilizar memoização , conforme estabelecido pelos requisitos do trabalho, o algoritmo pode recomputar o tamanho de expansão de um mesmo caractere múltiplas vezes ao longo da árvore de recursão. No pior caso, a complexidade de tempo é proporcional ao tamanho da string virtualmente expandida, ou seja, $O(N)$, onde $N$ é o número total de caracteres da expansão completa. Como $N$ pode crescer de forma exponencial em relação ao número de regras, entradas com cadeias profundas de substituições recíprocas tendem a apresentar tempos de execução significativamente maiores.
 
 == Dificuldades Encontradas
 
-// Relate os obstáculos que apareceram durante o desenvolvimento
-// e como você os superou.
+A principal dificuldade do grupo não foi a implementação da recursão em si — parte que inicialmente gerava mais receio —, mas sim encontrar uma estrutura de dados adequada para mapear letras às suas respectivas regras de substituição em C. Foram consideradas alternativas como migrar para C++, ou implementar um hashmap genérico em um arquivo de cabeçalho separado. A solução surgiu ao perceber que a tabela ASCII permite mapear cada letra minúscula diretamente a um índice inteiro por meio da expressão `letra - 'a'`, resultando em um array de 26 posições que funciona como uma tabela hash de endereçamento direto, sem colisões e com acesso em tempo constante.
 
 #pagebreak()
 
@@ -221,8 +191,6 @@ Como não há programação dinâmica (memoização(cache)), o algoritmo recalcu
 
 == Caso de Teste do Enunciado
 
-// Mostre que sua solução produz 47 para o exemplo dado.
-
 #figure(
   table(
     columns: (1fr, 1fr, 1fr),
@@ -230,52 +198,54 @@ Como não há programação dinâmica (memoização(cache)), o algoritmo recalcu
     align: center,
     stroke: 0.5pt,
     [*Entrada*], [*Saída Esperada*], [*Saída Obtida*],
-    [Exemplo do enunciado], [47], [_preencha_],
+    [Exemplo do enunciado], [47], [47],
   ),
   caption: [Verificação do caso do enunciado.],
 )
 
 == Casos de Teste da Disciplina
 
-// Preencha a tabela com os arquivos de teste disponibilizados na página da disciplina.
-
 #figure(
   table(
-    columns: (auto, 1fr, 1fr, 1fr),
+    columns: (auto, 1fr, 1fr),
     inset: 8pt,
-    align: (left, center, center, center),
+    align: (left, center, center),
     stroke: 0.5pt,
-    [*Arquivo*], [*Tamanho Final*], [*Tempo (s)*], [*Observações*],
-    [`teste01.txt`], [], [], [],
-    [`teste02.txt`], [], [], [],
-    [`teste03.txt`], [], [], [],
-    [`teste04.txt`], [], [], [],
-    [`teste05.txt`], [], [], [],
-    // Adicione linhas conforme necessário
+    [*Arquivo*], [*Tamanho Final*], [*Tempo (s)*],
+    [`teste01.txt`], [], [],
+    [`teste02.txt`], [], [],
+    [`teste03.txt`], [], [],
+    [`teste04.txt`], [], [],
+    [`teste05.txt`], [], [],
+    [`teste06.txt`], [], [],
+    [`teste07.txt`], [], [],
+    [`teste08.txt`], [], [],
+    [`teste09.txt`], [], [],
+    [`teste10.txt`], [], [],
+    [`teste11.txt`], [], [],
+    [`teste12.txt`], [], [],
+    [`teste13.txt`], [], [],
   ),
   caption: [Resultados nos casos de teste da disciplina.],
 )
 
-== Testes Adicionais (opcional)
-
-// Descreva casos-limite que você criou para estressar sua solução,
-// como letras sem substituição, cadeias muito longas, ciclos (se aplicável), etc.
-
-#pagebreak()
-
 // ============================================================
 = Resultados e Análise
 
-// Comente os tempos obtidos. Sua solução escala bem?
-// Houve algum caso que demorou mais do que o esperado? Por quê?
+A solução apresentou desempenho satisfatório nos casos de teste de menor porte. Para entradas com cadeias de substituição curtas e baixo grau de compartilhamento entre regras, o tempo de execução manteve-se em frações de segundo.
+
+Nos casos de maior porte, o crescimento exponencial do número de chamadas recursivas tornou-se evidente. Como o algoritmo não utiliza memoização, o tamanho de expansão de um mesmo caractere é recalculado toda vez que ele aparece na string de substituição de outro. Esse fator explica os tempos mais elevados observados nos arquivos de teste com cadeias de substituição mais profundas ou com maior grau de reutilização de símbolos intermediários.
+
+Uma otimização natural, caso fosse permitida, seria armazenar em cache o resultado de `calcularTamanho(c)` para cada um dos 26 caracteres possíveis. Com isso, cada subproblema seria resolvido no máximo uma vez, reduzindo a complexidade efetiva para $O(26 dot S)$, onde $S$ é o comprimento máximo de uma string de substituição.
 
 #pagebreak()
 
 // ============================================================
 = Conclusões
 
-// Resuma o que você aprendeu com o trabalho.
-// O que funcionou bem? O que faria diferente numa próxima vez?
+Este trabalho permitiu aplicar na prática o conceito de recursão com expansão simbólica, situação recorrente em linguagens formais, compiladores e sistemas de geração de conteúdo. A ideia central — trabalhar apenas com o tamanho das strings em vez de construí-las efetivamente — foi determinante para tornar a solução viável em termos de memória.
+
+A ausência de memoização, imposta pelos requisitos do trabalho, evidenciou de forma clara a diferença de desempenho entre algoritmos com e sem reaproveitamento de subproblemas. Casos com alta sobreposição de chamadas recursivas revelaram crescimento exponencial no tempo de execução, ilustrando na prática a importância da programação dinâmica em problemas dessa natureza.
 
 #pagebreak()
 
