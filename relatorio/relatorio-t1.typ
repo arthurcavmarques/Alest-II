@@ -133,75 +133,43 @@ Para garantir acesso em tempo constante $O(1)$ às regras de substituição, uti
 
 Essa abordagem equivale a uma tabela hash com função de hash perfeita, eliminando colisões e garantindo acesso em $O(1)$.
 
-== Algoritmo (C)
+== Algoritmo (Pseudo Código)
 
-```C
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+```
+FUNÇÃO Principal():
+    ABRIR arquivo "input.txt"
 
-unsigned long calcularTamanho(char c, char *vetor[]);
+    letraInicial = NULO
+    regras = VETOR vazio (mapeamento de chars para strings)
 
-int main() {
-    FILE *pFile = fopen("input.txt", "r");
-    if (pFile == NULL) {
-        printf("Não foi possível ler o arquivo");
-        return 1;
-    }
-    clock_t inicio, fim;
-    double tempo_final;
+    // Leitura das regras
+    PARA CADA linha no arquivo:
+        LER 'letra' e 'texto'
+        SE for a primeira linha:
+            letraInicial = letra
+        regras[letra] = texto
 
-    char *regras[26] = {0};
-    char letra;
-    char valor[1025] = {0};
-    char buffer[1050] = {0};
-    char letraInicial;
-    int count = 0;
+    // Processamento
+    INICIAR cronômetro
+    tamanho_total = CalcularTamanho(letraInicial, regras)
+    PARAR cronômetro
 
-    while (fgets(buffer, sizeof(buffer), pFile) != NULL) {
-        if (sscanf(buffer, "%c %s", &letra, valor) == 2) {
-            if (count == 0) {
-                letraInicial = letra;
-            }
-            printf("%c == %s\n", letra, valor);
-            regras[letra - 'a'] = strdup(valor);
-        } else if (sscanf(buffer, "%c", &letra) == 1) {
-            printf("%c\n", letra);
-        } else {
-            break;
-        }
-        count++;
-    }
+    IMPRIMIR tamanho_total e tempo gasto
+FIM FUNÇÃO
 
-    inicio = clock();
-    unsigned long soma = calcularTamanho(letraInicial, regras);
-    fim = clock();
-    tempo_final = ((double) fim - inicio) / CLOCKS_PER_SEC;
-    printf("%lu\n",soma);
-    printf("%f\n",tempo_final);
-    for (int i = 0; i < 26; i++) {
-        if (regras[i] != NULL) {
-            free(regras[i]);
-        }
-    }
-    fclose(pFile);
-    return 0;
-}
+FUNÇÃO CalcularTamanho(letra, regras):
+    // Caso base: se a letra não for uma regra
+    SE regras[letra] for VAZIO:
+        RETORNA 1
 
-unsigned long calcularTamanho(char c, char *vetor[]) {
-    if (vetor[c - 'a'] == NULL) {
-        return 1;
-    }
+    // Soma o tamanho gerado por cada caractere da regra
+    soma = 0
+    texto = regras[letra]
 
-    char *valor = vetor[c - 'a'];
-    unsigned long soma = 0;
-
-    for (int i = 0; valor[i] != '\0'; i++) {
-        soma = soma + calcularTamanho(valor[i], vetor);
-    }
-    return soma;
-}
+    PARA CADA caractere EM texto:
+        soma = soma + CalcularTamanho(caractere, regras)
+    RETORNA soma
+FIM FUNÇÃO
 ```
 
 == Determinação da Letra Inicial
@@ -210,7 +178,7 @@ A letra inicial é definida como a primeira letra que aparece no arquivo de entr
 
 == Complexidade
 
-Por não utilizar memoização — conforme estabelecido pelos requisitos do trabalho — o algoritmo pode recomputar o tamanho de expansão de um mesmo caractere múltiplas vezes ao longo da árvore de recursão. No pior caso, a complexidade de tempo é proporcional ao tamanho da string virtualmente expandida, ou seja, $O(N)$, onde $N$ é o número total de caracteres da expansão completa. Como $N$ pode crescer de forma exponencial em relação ao número de regras, entradas com cadeias profundas de substituições recíprocas tendem a apresentar tempos de execução significativamente maiores.
+Por não utilizar memoização , conforme estabelecido pelos requisitos do trabalho, o algoritmo pode recomputar o tamanho de expansão de um mesmo caractere múltiplas vezes ao longo da árvore de recursão. No pior caso, a complexidade de tempo é proporcional ao tamanho da string virtualmente expandida, ou seja, $O(N)$, onde $N$ é o número total de caracteres da expansão completa. Como $N$ pode crescer de forma exponencial em relação ao número de regras, entradas com cadeias profundas de substituições recíprocas tendem a apresentar tempos de execução significativamente maiores.
 
 == Dificuldades Encontradas
 
