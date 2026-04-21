@@ -203,7 +203,7 @@ A principal dificuldade do grupo não foi a implementação da recursão em si �
   caption: [Verificação do caso do enunciado.],
 )
 
-== Casos de Teste da Disciplina
+== Casos de Teste (sem memoização)
 
 #figure(
   table(
@@ -212,21 +212,21 @@ A principal dificuldade do grupo não foi a implementação da recursão em si �
     align: (left, center, center),
     stroke: 0.5pt,
     [*Arquivo*], [*Tamanho Final*], [*Tempo (s)*],
-    [`teste01.txt`], [], [],
-    [`teste02.txt`], [], [],
-    [`teste03.txt`], [], [],
-    [`teste04.txt`], [], [],
-    [`teste05.txt`], [], [],
-    [`teste06.txt`], [], [],
-    [`teste07.txt`], [], [],
-    [`teste08.txt`], [], [],
-    [`teste09.txt`], [], [],
-    [`teste10.txt`], [], [],
-    [`teste11.txt`], [], [],
-    [`teste12.txt`], [], [],
-    [`teste13.txt`], [], [],
+    [`teste01.txt`], [10], [0.00],
+    [`teste02.txt`], [1202], [0.00],
+    [`teste03.txt`], [12328], [0.00],
+    [`teste04.txt`], [59443], [0.00],
+    [`teste05.txt`], [3745926], [0.03],
+    [`teste06.txt`], [3848292], [0.03],
+    [`teste07.txt`], [4258112], [0.03],
+    [`teste08.txt`], [7683690], [0.05],
+    [`teste09.txt`], [13884922], [0.11],
+    [`teste10.txt`], [2329991102], [27.23],
+    [`teste11.txt`], [1881188405], [229.78],
+    [`teste12.txt`], [Sem resultado], [~],
+    [`teste13.txt`], [Sem resultado], [~],
   ),
-  caption: [Resultados nos casos de teste da disciplina.],
+  caption: [Resultados nos casos de teste do algoritmo sem o uso de programação dinâmica.],
 )
 
 // ============================================================
@@ -252,4 +252,4 @@ A ausência de memoização, imposta pelos requisitos do trabalho, evidenciou de
 // ============================================================
 = Referências
 
-+ #text[Cormen, T. H. et al. _Introduction to Algorithms_. 4ª ed. MIT Press, 2022.]
++ #text[Cormen, T. H. et al. _Introduction to Algorithms_. 5ª ed. MIT Press, 2022.]
